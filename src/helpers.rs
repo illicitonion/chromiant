@@ -29,6 +29,7 @@ fn get_data_dir() -> PathBuf {
     let mut dir = match data_local_dir() {
         Some(dir) => dir,
         None => std::env::current_dir()
+            // Given this is only ever called from functions that already return Result, maybe return a Result here instead of panicking? Particularly given you're in a library.
             .expect("Failed to get current dir")
             .to_path_buf(),
     };
@@ -73,6 +74,8 @@ fn get_modified_timestamp_of_remote_src() -> Result<Timestamp> {
 
 // Fetch data from remote source and write to file.
 // Assumes that the data directory exists.
+// Returning () is ok and makes sense, but given every caller is immediately going to want to access the data, you *may* want to return a Reader into the data or something?
+// Particularly for the download case, given you're reading the bytes into memory, this could allow you to avoid needing to re-read the file and re-use the already-in-memory bytes for the reader.
 pub(crate) fn update_local_data_file(
     file_path: &Path,
     fetcher: &impl ResourceFetcher,
@@ -86,12 +89,15 @@ pub(crate) fn update_local_data_file(
                 );
                 fs::File::create(file_path)?;
             }
+            // These should probably go to stderr (as should most println!s :))
             println!("Got data from remote source file");
             println!("Writing to file at {}", file_path.display());
+            // Let's talk about atomic write+rename operations
             let mut f = fs::File::options().write(true).open(file_path)?;
             f.write_all(data.as_bytes())?;
         }
         Err(e) => {
+            // Why is this only for timeouts? If e.g. you're offline, or couldn't auth to GitHub, do you not still want to log + fallback?
             if e.is_timeout() {
                 if !file_path.is_file() {
                     bail!(
@@ -113,6 +119,7 @@ pub(crate) fn update_local_data_file(
 
 // Create the data directory if it doesn't exist and write to file.
 // If the data dir exists, check if the file is recent, and if not, write to file.
+// This name feels off - writing feels like a side-effect of this function rather than its purpose?
 pub(crate) fn write_data_to_file(file_path: &Path) -> Result<()> {
     let default_fetcher = DefaultResourceFetcher;
     let Some(data_dir) = file_path.parent() else {

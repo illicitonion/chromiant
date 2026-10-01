@@ -27,6 +27,14 @@ pub(crate) fn by_hex_in(s: &str, file_path: &Path) -> Result<Option<Color>> {
 
     let search_query = SearchQuery {
         search_type: SearchType::ByHex,
+        // This is a "my personal taste" thing not necessarily a general rule (and the cost here absolutely doesn't matter enough to really worry about), but:
+        // In general we prefer passing references to owned data where that's sufficient for our needs.
+        // BUT here, you unconditionally clone the data you were passed into a new string (same in by_exact_name_in).
+        // In these cases, I personally prefer to take an owned value (String) as the parameter type.
+        // That both:
+        //  1. Allows the caller to just give you an owned value if they don't need it any more (avoiding an unnecessary clone)
+        //  2. Stops hiding the cost of a clone. Right now reading this signature, I assume it doesn't need to own s, but the clone you're doing here is slightly more expensive.
+        // That said, it's possible you could change `SearchQuery` to have a reference rather than an owned String here - if you're planning on doing that in the future, taking a `&str` here makes sense - your public API represents what you *need* and you're freeing yourself up to optimise later without needing to make a breaking API change.
         query: s.to_string(),
     };
 

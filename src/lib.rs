@@ -64,6 +64,10 @@ pub struct Color {
     /// Marker to indicate whether the color's name is considered "good" or well-crafted.
     ///
     /// The "good names" are marked with `'x'`.
+    // There's a really interesting question to explore here around serialisation of these!
+    // Personally, in a public-facing API, I would probably have this be a boolean rather than an Option<char> that needs documenting.
+    // Or maybe a custom enum if it's really tri-state (good/bad/unknown).
+    // You could use a custom [`deserialize_with`](https://serde.rs/field-attrs.html#deserialize_with) for this so that your public API doesn't necessarily match the serialized format.
     #[serde(rename = "good name")]
     pub good_name: Option<char>,
 }

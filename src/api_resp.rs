@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+// You _may_ want to use something like octocrab to avoid having to model all of these types yourself, but that's also a very heavy dependency for what you're doing.
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct ApiResp {
     sha: String,
